@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { useAuth } from '@/contexts/AuthContext'
 import { AuthLayout } from '@/layouts/AuthLayout'
 import { MainLayout } from '@/layouts/MainLayout'
 import { AssetsPage } from '@/pages/AssetsPage'
@@ -9,6 +10,11 @@ import { NotFoundPage } from '@/pages/NotFoundPage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { ROUTES } from '@/lib/routes'
 
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth()
+  return isAuthenticated ? <>{children}</> : <Navigate to={ROUTES.login} replace />
+}
+
 export function AppRoutes() {
   return (
     <Routes>
@@ -17,7 +23,13 @@ export function AppRoutes() {
         <Route path={ROUTES.login} element={<LoginPage />} />
         <Route path={ROUTES.register} element={<RegisterPage />} />
       </Route>
-      <Route element={<MainLayout />}>
+      <Route
+        element={
+          <RequireAuth>
+            <MainLayout />
+          </RequireAuth>
+        }
+      >
         <Route path={ROUTES.dashboard} element={<DashboardPage />} />
         <Route path={ROUTES.budget} element={<BudgetPage />} />
         <Route path={ROUTES.assets} element={<AssetsPage />} />
