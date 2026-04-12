@@ -4,6 +4,7 @@ const cors = require('cors')
 const jwt = require('jsonwebtoken')
 const db = require('./db')
 const av = require('./alphaVantage')
+const bcrypt = require('bcrypt')
 
 const app = express()
 
@@ -28,6 +29,51 @@ app.get('/ping', (_req, res) => res.json({ ok: true }))
 
 //TODO james: add register/login stuff here
 //jwt payload needs to have user_id in it or nothing below works
+
+// register
+app.post('/api/register', async (req, res) => {
+  const { email, password, name } = req.body
+  if (!email || !password || !name)
+    return res.status(400).json({ error: 'missing required fields' })
+
+  try {
+    const hashed = await bcrypt.hash(password, 10)
+    const result = await db.query(
+      'INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING user_id, email, name',
+      [email, hashed, name]
+    )
+    const user = result.rows[0]
+    const token = jwt.sign({ user_id: user.user_id }, process.env.JWT_SECRET, { expiresIn: '7d' })
+    res.status(201).json({ token, user })
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'email already in use' })
+    res.status(500).json({ error: 'registration failed' })
+  }
+})
+
+// login
+app.post('/api/login', async (req, res) => {
+  const { email, password } = req.body
+  if (!email || !password)
+    return res.status(400).json({ error: 'missing email or password' })
+
+  try {
+    const result = await db.query(
+      'SELECT * FROM users WHERE email = $1',
+      [email]
+    )
+    const user = result.rows[0]
+    if (!user) return res.status(401).json({ error: 'invalid credentials' })
+
+    const match = await bcrypt.compare(password, user.password_hash)
+    if (!match) return res.status(401).json({ error: 'invalid credentials' })
+
+    const token = jwt.sign({ user_id: user.user_id }, process.env.JWT_SECRET, { expiresIn: '7d' })
+    res.json({ token, user: { user_id: user.user_id, email: user.email, name: user.name } })
+  } catch (err) {
+    res.status(500).json({ error: 'login failed' })
+  }
+})
 
 
 //budgets
