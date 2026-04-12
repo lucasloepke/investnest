@@ -1,0 +1,58 @@
+CREATE TABLE IF NOT EXISTS users (
+  user_id SERIAL PRIMARY KEY,
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  user_password VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS budgets (
+  budget_id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,
+  total_amount DECIMAL(12,2) NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS budget_categories (
+  category_id SERIAL PRIMARY KEY,
+  budget_id INTEGER NOT NULL REFERENCES budgets(budget_id) ON DELETE CASCADE,
+  category_name VARCHAR(100) NOT NULL,
+  allocated_amount DECIMAL(12,2) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS expenses (
+  expense_id SERIAL PRIMARY KEY,
+  category_id INTEGER NOT NULL REFERENCES budget_categories(category_id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  description VARCHAR(255) NOT NULL,
+  amount DECIMAL(12,2) NOT NULL,
+  expense_date DATE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS assets (
+  asset_id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  asset_name VARCHAR(100) NOT NULL,
+  asset_type VARCHAR(50) NOT NULL,
+  value DECIMAL(12,2) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS watchlist_items (
+  watchlist_id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  symbol VARCHAR(20) NOT NULL,
+  added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, symbol)
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+  notification_id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  message VARCHAR(255) NOT NULL,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
