@@ -10,10 +10,12 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let mounted = true
     getNetWorth()
-      .then(setData)
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false))
+      .then(d => { if (mounted) setData(d) })
+      .catch(e => { if (mounted) setError(e.message) })
+      .finally(() => { if (mounted) setLoading(false) })
+    return () => { mounted = false }
   }, [])
 
   if (loading) return <p className="page">Loading...</p>
