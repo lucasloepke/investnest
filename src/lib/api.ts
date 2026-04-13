@@ -122,6 +122,8 @@ export interface Category {
   budget_id: number
   category_name: string
   allocated_amount: number
+  spent: number
+  remaining: number
 }
 
 export interface Expense {
@@ -131,6 +133,7 @@ export interface Expense {
   description: string
   amount: number
   expense_date: string
+  category_name: string
 }
 
 export function getBudgets(): Promise<Budget[]> {
@@ -206,6 +209,8 @@ export interface AssetPayload {
 export interface NetWorthData {
   net_worth: number
   assets_by_type: Array<{ asset_type: string; count: number; total_value: number }>
+  expenses: { this_month: number; this_year: number }
+  budgets: Array<{ budget_id: number; name: string; total_spent: number; total_amount: number }>
 }
 
 export function getAssets(): Promise<Asset[]> {

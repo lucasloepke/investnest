@@ -30,7 +30,7 @@ export function BudgetPage() {
     if (!selectedBudget) return
     Promise.all([
       getCategories(selectedBudget.budget_id),
-      getExpenses({ budget_id: selectedBudget.budget_id })
+      getExpenses(selectedBudget.budget_id)
     ]).then(([cats, exps]) => { setCategories(cats); setExpenses(exps) })
       .catch(e => setError(e.message))
   }, [selectedBudget])
