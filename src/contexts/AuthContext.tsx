@@ -12,8 +12,7 @@ import type { LoginPayload, RegisterPayload } from '@/lib/api'
 
 interface User {
   userId: number
-  firstName: string
-  lastName: string
+  name: string
   email: string
 }
 

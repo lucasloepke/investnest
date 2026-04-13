@@ -53,28 +53,139 @@ export interface RegisterPayload {
   password: string
 }
 
-interface AuthResponse {
+// Shape the server actually returns
+interface ServerAuthResponse {
+  token: string
+  user: {
+    user_id: number
+    email: string
+    name: string
+  }
+}
+
+// Normalised shape the rest of the app uses
+export interface AuthResponse {
   token: string
   user: {
     userId: number
-    firstName: string
-    lastName: string
+    name: string
     email: string
   }
 }
 
-export function login(payload: LoginPayload): Promise<AuthResponse> {
-  return request<AuthResponse>('/auth/login', {
+function normaliseAuth(raw: ServerAuthResponse): AuthResponse {
+  return {
+    token: raw.token,
+    user: {
+      userId: raw.user.user_id,
+      name: raw.user.name,
+      email: raw.user.email,
+    },
+  }
+}
+
+export async function login(payload: LoginPayload): Promise<AuthResponse> {
+  const raw = await request<ServerAuthResponse>('/api/login', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+  return normaliseAuth(raw)
+}
+
+export async function register(payload: RegisterPayload): Promise<AuthResponse> {
+  const raw = await request<ServerAuthResponse>('/api/register', {
+    method: 'POST',
+    body: JSON.stringify({
+      name: `${payload.firstName} ${payload.lastName}`,
+      email: payload.email,
+      password: payload.password,
+    }),
+  })
+  return normaliseAuth(raw)
+}
+
+// ── Budgets ───────────────────────────────────────────────────────────────────
+
+export interface Budget {
+  budget_id: number
+  user_id: number
+  name: string
+  total_amount: number
+  start_date: string
+  end_date: string
+  total_spent: number
+  remaining: number
+}
+
+export interface Category {
+  category_id: number
+  budget_id: number
+  category_name: string
+  allocated_amount: number
+}
+
+export interface Expense {
+  expense_id: number
+  category_id: number
+  user_id: number
+  description: string
+  amount: number
+  expense_date: string
+}
+
+export function getBudgets(): Promise<Budget[]> {
+  return request<Budget[]>('/api/budgets')
+}
+
+export function createBudget(payload: {
+  name: string
+  total_amount: number
+  start_date: string
+  end_date: string
+}): Promise<Budget> {
+  return request<Budget>('/api/budgets', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
 }
 
-export function register(payload: RegisterPayload): Promise<AuthResponse> {
-  return request<AuthResponse>('/auth/register', {
+export function deleteBudget(budgetId: number): Promise<void> {
+  return request<void>(`/api/budgets/${budgetId}`, { method: 'DELETE' })
+}
+
+export function getCategories(budgetId: number): Promise<Category[]> {
+  return request<Category[]>(`/api/budgets/${budgetId}/categories`)
+}
+
+export function createCategory(
+  budgetId: number,
+  payload: { category_name: string; allocated_amount: number },
+): Promise<Category> {
+  return request<Category>(`/api/budgets/${budgetId}/categories`, {
     method: 'POST',
     body: JSON.stringify(payload),
   })
+}
+
+export function getExpenses(budgetId?: number): Promise<Expense[]> {
+  const qs = budgetId != null ? `?budget_id=${budgetId}` : ''
+  return request<Expense[]>(`/api/expenses${qs}`)
+}
+
+export function createExpense(payload: {
+  category_id: number
+  description: string
+  amount: number
+  expense_date: string
+}): Promise<Expense> {
+  return request<Expense>('/api/expenses', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function deleteExpense(expenseId: number): Promise<void> {
+  return request<void>(`/api/expenses/${expenseId}`, { method: 'DELETE' })
 }
 
 // ── Assets ───────────────────────────────────────────────────────────────────
@@ -92,28 +203,26 @@ export interface AssetPayload {
   value: number
 }
 
-export interface NetWorthResponse {
+export interface NetWorthData {
   net_worth: number
   assets_by_type: Array<{ asset_type: string; count: number; total_value: number }>
 }
 
 export function getAssets(): Promise<Asset[]> {
-  return request<Asset[]>('/assets')
+  return request<Asset[]>('/api/assets')
 }
 
 export function addAsset(payload: AssetPayload): Promise<Asset> {
-  return request<Asset>('/assets', {
+  return request<Asset>('/api/assets', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
 }
 
 export function deleteAsset(assetId: number): Promise<void> {
-  return request<void>(`/assets/${assetId}`, {
-    method: 'DELETE',
-  })
+  return request<void>(`/api/assets/${assetId}`, { method: 'DELETE' })
 }
 
-export function getNetWorth(): Promise<NetWorthResponse> {
-  return request<NetWorthResponse>('/networth')
+export function getNetWorth(): Promise<NetWorthData> {
+  return request<NetWorthData>('/api/networth')
 }
