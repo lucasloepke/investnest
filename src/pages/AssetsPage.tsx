@@ -30,8 +30,8 @@ export function AssetsPage() {
   }, [])
 
   const totalValue = useMemo(
-    () => assets.reduce((sum, asset) => sum + asset.value, 0),
-    [assets],
+  () => assets.reduce((sum, asset) => sum + Number(asset.value), 0),
+  [assets],
   )
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
