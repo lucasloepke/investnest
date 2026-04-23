@@ -35,6 +35,14 @@ export function BudgetPage() {
       .catch(e => setError(e.message))
   }, [selectedBudget])
 
+  // Re-fetches the budget list and syncs selectedBudget so total/spent/remaining stay current
+  async function refreshBudget(budgetId: number) {
+    const updated = await getBudgets()
+    setBudgets(updated)
+    const fresh = updated.find(b => b.budget_id === budgetId) ?? null
+    setSelectedBudget(fresh)
+  }
+
   async function handleDeleteBudget(id: number) {
     await deleteBudget(id)
     const updated = budgets.filter(b => b.budget_id !== id)
@@ -46,7 +54,10 @@ export function BudgetPage() {
     await deleteExpense(id)
     setExpenses(prev => prev.filter(e => e.expense_id !== id))
     if (selectedBudget) {
-      const cats = await getCategories(selectedBudget.budget_id)
+      const [cats] = await Promise.all([
+        getCategories(selectedBudget.budget_id),
+        refreshBudget(selectedBudget.budget_id),
+      ])
       setCategories(cats)
     }
   }
@@ -133,9 +144,10 @@ export function BudgetPage() {
             </div>
 
             {showCatForm && (
-              <NewCategoryForm budgetId={selectedBudget.budget_id} onCreated={cat => {
+              <NewCategoryForm budgetId={selectedBudget.budget_id} onCreated={async cat => {
                 setCategories(prev => [...prev, cat])
                 setShowCatForm(false)
+                await refreshBudget(selectedBudget.budget_id)
               }} />
             )}
 
@@ -184,7 +196,10 @@ export function BudgetPage() {
               <NewExpenseForm categories={categories} onCreated={async exp => {
                 setExpenses(prev => [exp, ...prev])
                 setShowExpenseForm(false)
-                const cats = await getCategories(selectedBudget.budget_id)
+                const [cats] = await Promise.all([
+                  getCategories(selectedBudget.budget_id),
+                  refreshBudget(selectedBudget.budget_id),
+                ])
                 setCategories(cats)
               }} />
             )}
@@ -392,3 +407,4 @@ function fmt(n: number) {
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
+
