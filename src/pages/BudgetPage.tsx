@@ -239,6 +239,7 @@ function NewBudgetForm({ onCreated }: { onCreated: (b: Budget) => void }) {
 
   async function submit() {
     if (!name || !total || !start || !end) return setErr('All fields required')
+    if (end <= start) return setErr('End date must be after the start date')
     setSaving(true)
     try {
       const b = await createBudget({ name, total_amount: Number(total), start_date: start, end_date: end })
@@ -268,7 +269,7 @@ function NewBudgetForm({ onCreated }: { onCreated: (b: Budget) => void }) {
         </div>
         <div className="form-field">
           <label className="form-label">End Date</label>
-          <input className="form-input" type="date" value={end} onChange={e => setEnd(e.target.value)} />
+          <input className="form-input" type="date" value={end} min={start || undefined} onChange={e => setEnd(e.target.value)} />
         </div>
       </div>
       <button className="btn btn--primary" style={{ width: 'auto' }} onClick={submit} disabled={saving}>
