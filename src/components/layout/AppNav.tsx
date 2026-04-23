@@ -15,6 +15,9 @@ export function AppNav() {
         <NavLink to={ROUTES.budget} className={linkClass}>
           Budget
         </NavLink>
+        <NavLink to={ROUTES.expenses} className={linkClass}>
+          Expenses
+        </NavLink>
         <NavLink to={ROUTES.assets} className={linkClass}>
           Assets
         </NavLink>

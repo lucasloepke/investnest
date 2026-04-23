@@ -5,6 +5,7 @@ import { MainLayout } from '@/layouts/MainLayout'
 import { AssetsPage } from '@/pages/AssetsPage'
 import { BudgetPage } from '@/pages/BudgetPage'
 import { DashboardPage } from '@/pages/DashboardPage'
+import { ExpensePage } from '@/pages/ExpensePage'
 import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { RegisterPage } from '@/pages/RegisterPage'
@@ -32,6 +33,7 @@ export function AppRoutes() {
       >
         <Route path={ROUTES.dashboard} element={<DashboardPage />} />
         <Route path={ROUTES.budget} element={<BudgetPage />} />
+        <Route path={ROUTES.expenses} element={<ExpensePage />} />
         <Route path={ROUTES.assets} element={<AssetsPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
