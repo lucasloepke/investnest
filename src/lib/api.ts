@@ -140,16 +140,24 @@ export function getBudgets(): Promise<Budget[]> {
   return request<Budget[]>('/api/budgets')
 }
 
-export function createBudget(payload: {
+export async function createBudget(payload: {
   name: string
   total_amount: number
   start_date: string
   end_date: string
 }): Promise<Budget> {
-  return request<Budget>('/api/budgets', {
+  const b = await request<Budget>('/api/budgets', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
+  // The POST endpoint returns the raw INSERT row which lacks the computed
+  // total_spent and remaining columns (those come from the GET query).
+  // Default them so the UI never displays NaN for a freshly created budget.
+  return {
+    ...b,
+    total_spent: b.total_spent ?? 0,
+    remaining: b.remaining ?? b.total_amount,
+  }
 }
 
 export function deleteBudget(budgetId: number): Promise<void> {
