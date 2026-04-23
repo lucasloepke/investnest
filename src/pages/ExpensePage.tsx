@@ -211,23 +211,10 @@ export function ExpensePage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.9rem' }}>
           <div className="form-field">
             <label className="form-label">Type</label>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              {(['expense', 'income'] as TransactionType[]).map(value => (
-                <button
-                  key={value}
-                  type="button"
-                  className="btn"
-                  style={{
-                    background: transactionType === value ? 'var(--color-teal)' : 'var(--color-bg)',
-                    color: transactionType === value ? '#fff' : 'var(--color-text)',
-                    border: '1px solid var(--color-border)',
-                  }}
-                  onClick={() => setTransactionType(value)}
-                >
-                  {value === 'expense' ? 'Expense' : 'Income'}
-                </button>
-              ))}
-            </div>
+            <select className="form-input" value={transactionType} onChange={e => setTransactionType(e.target.value as TransactionType)}>
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+            </select>
           </div>
 
           <div className="form-field">
