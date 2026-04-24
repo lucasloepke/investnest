@@ -15,10 +15,10 @@ Investnest
 | Layer | Team Member |
 |---|---|
 | Frontend | Update Your name |
-| Backend | James Heffernan |
+| Backend | James Heffernan + Ian O'Leary |
 | Database | Vladimir Deianov |
 | Authentication | James Heffernan |
-| Stock Market API | Update Your name |
+| Stock Market API | Ian O'Leary |
 | Frontend Deployment | Update Your name |
 | Backend Deployment | Update Your name |
 | Uptime Monitoring | Update Your name |
