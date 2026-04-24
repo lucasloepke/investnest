@@ -352,15 +352,64 @@ app.get('/api/assets', auth, async (req, res) => {
   }
 })
 
+// Feature #13: live stock quotes for investment assets that have a ticker_symbol
+app.get('/api/assets/quotes', auth, async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT asset_id, ticker_symbol FROM assets
+       WHERE user_id = $1 AND ticker_symbol IS NOT NULL AND ticker_symbol <> ''`,
+      [req.user.user_id]
+    )
+    if (!result.rows.length) return res.json([])
+
+    const symbolToIds = {}
+    for (const row of result.rows) {
+      const sym = row.ticker_symbol.toUpperCase()
+      if (!symbolToIds[sym]) symbolToIds[sym] = []
+      symbolToIds[sym].push(row.asset_id)
+    }
+
+    const uniqueSymbols = Object.keys(symbolToIds)
+    const quotes = await av.getBatchQuotes(uniqueSymbols)
+
+    // Attach asset_ids so the frontend can match quotes back to assets
+    const response = uniqueSymbols.map(sym => ({
+      ...quotes[sym],
+      asset_ids: symbolToIds[sym],
+    }))
+
+    res.json(response)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// Feature #13: search for a ticker symbol (used by the add-asset form autocomplete)
+app.get('/api/assets/search-ticker', auth, async (req, res) => {
+  if (!req.query.q) return res.status(400).json({ error: 'q param required' })
+  try {
+    const results = await av.searchSymbol(req.query.q)
+    res.json(results)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 app.post('/api/assets', auth, async (req, res) => {
-  const { asset_name, asset_type, value } = req.body
+  const { asset_name, asset_type, value, ticker_symbol } = req.body
   if (!asset_name || !asset_type || value == null)
     return res.status(400).json({ error: 'missing required fields' })
 
+  // Only Investment assets can have a ticker symbol
+  const ticker = asset_type === 'Investment' && ticker_symbol
+    ? ticker_symbol.toUpperCase().trim()
+    : null
+
   try {
     const result = await db.query(
-      'INSERT INTO assets (user_id, asset_name, asset_type, value) VALUES ($1,$2,$3,$4) RETURNING *',
-      [req.user.user_id, asset_name, asset_type, value]
+      `INSERT INTO assets (user_id, asset_name, asset_type, value, ticker_symbol)
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [req.user.user_id, asset_name, asset_type, value, ticker]
     )
     res.status(201).json(result.rows[0])
   } catch {
@@ -369,15 +418,16 @@ app.post('/api/assets', auth, async (req, res) => {
 })
 
 app.put('/api/assets/:id', auth, async (req, res) => {
-  const { asset_name, asset_type, value } = req.body
+  const { asset_name, asset_type, value, ticker_symbol } = req.body
   try {
     const result = await db.query(
       `UPDATE assets SET
         asset_name = COALESCE($1, asset_name),
         asset_type = COALESCE($2, asset_type),
-        value = COALESCE($3, value)
-       WHERE asset_id = $4 AND user_id = $5 RETURNING *`,
-      [asset_name, asset_type, value, req.params.id, req.user.user_id]
+        value = COALESCE($3, value),
+        ticker_symbol = COALESCE($4, ticker_symbol)
+       WHERE asset_id = $5 AND user_id = $6 RETURNING *`,
+      [asset_name, asset_type, value, ticker_symbol ?? null, req.params.id, req.user.user_id]
     )
     if (!result.rows.length) return res.status(404).json({ error: 'asset not found' })
     res.json(result.rows[0])
