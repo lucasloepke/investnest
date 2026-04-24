@@ -206,12 +206,32 @@ export interface Asset {
   asset_name: string
   asset_type: string
   value: number
+  ticker_symbol?: string | null
 }
 
 export interface AssetPayload {
   asset_name: string
   asset_type: string
   value: number
+  ticker_symbol?: string | null
+}
+
+// Live quote returned by GET /api/assets/quotes (Alpha Vantage data)
+export interface AssetQuote {
+  symbol: string
+  price: number
+  change: number
+  changePercent: string
+  latestTradingDay: string
+  asset_ids: number[]
+  error?: string
+}
+
+// Symbol search result from GET /api/assets/search-ticker
+export interface TickerSearchResult {
+  symbol: string
+  name: string
+  type: string
 }
 
 export interface NetWorthData {
@@ -234,6 +254,16 @@ export function addAsset(payload: AssetPayload): Promise<Asset> {
 
 export function deleteAsset(assetId: number): Promise<void> {
   return request<void>(`/api/assets/${assetId}`, { method: 'DELETE' })
+}
+
+// Feature #13: fetch live stock prices for all investment assets with a ticker_symbol
+export function getAssetQuotes(): Promise<AssetQuote[]> {
+  return request<AssetQuote[]>('/api/assets/quotes')
+}
+
+// Feature #13: search for a ticker symbol by keyword
+export function searchTicker(q: string): Promise<TickerSearchResult[]> {
+  return request<TickerSearchResult[]>(`/api/assets/search-ticker?q=${encodeURIComponent(q)}`)
 }
 
 export function getNetWorth(): Promise<NetWorthData> {
