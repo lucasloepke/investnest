@@ -80,7 +80,7 @@ export function RegisterPage() {
       {serverError && <p className="form-error form-error--banner">{serverError}</p>}
 
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
-        <div className="form-row">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
           <div className="form-field">
             <label htmlFor="firstName" className="form-label">
               First name
