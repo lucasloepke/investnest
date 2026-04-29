@@ -42,6 +42,7 @@ CREATE TABLE assets (
     asset_name VARCHAR(100) NOT NULL,
     asset_type VARCHAR(50) NOT NULL,
     value DECIMAL(12,2) NOT NULL,
+    ticker_symbol VARCHAR(20) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
