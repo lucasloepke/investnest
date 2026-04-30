@@ -1,13 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   addAsset,
   deleteAsset,
   getAssets,
   getAssetQuotes,
-  searchTicker,
   type Asset,
   type AssetQuote,
-  type TickerSearchResult,
 } from '@/lib/api'
 
 const assetTypes = ['Cash', 'Stock', 'Real Estate', 'Other'] as const
@@ -25,52 +23,12 @@ function fmtChange(change: number, pct: string) {
 // ── Ticker search autocomplete ────────────────────────────────────────────────
 
 function TickerSearch({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [query, setQuery] = useState(value)
-  const [results, setResults] = useState<TickerSearchResult[]>([])
-  const [searching, setSearching] = useState(false)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => { setQuery(value) }, [value])
-
   function handleInput(e: React.ChangeEvent<HTMLInputElement>) {
     const q = e.target.value.toUpperCase()
-    setQuery(q)
     onChange(q)
-    setResults([])
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (q.length < 1) return
-    debounceRef.current = setTimeout(async () => {
-      setSearching(true)
-      try {
-        const hits = await searchTicker(q)
-        setResults(hits.slice(0, 5))
-      } catch { /* silently ignore */ }
-      finally { setSearching(false) }
-    }, 500)
   }
 
-  function pick(sym: string) { setQuery(sym); onChange(sym); setResults([]) }
-
-  return (
-    <div style={{ position: 'relative' }}>
-      <input className="form-input" value={query} onChange={handleInput} placeholder="e.g. AAPL" autoComplete="off" />
-      {searching && <div style={{ fontSize: '0.75rem', color: 'var(--color-muted)', marginTop: '0.25rem' }}>Searching…</div>}
-      {results.length > 0 && (
-        <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '0.375rem', listStyle: 'none', margin: '0.25rem 0 0', padding: 0, zIndex: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.12)' }}>
-          {results.map(r => (
-            <li key={r.symbol} onClick={() => pick(r.symbol)}
-              style={{ padding: '0.5rem 0.75rem', cursor: 'pointer', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
-              onMouseLeave={e => (e.currentTarget.style.background = '')}
-            >
-              <span style={{ fontWeight: 600 }}>{r.symbol}</span>
-              <span style={{ color: 'var(--color-muted)', maxWidth: '60%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
+  return <input className="form-input" value={value} onChange={handleInput} placeholder="e.g. AAPL" autoComplete="off" />
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
