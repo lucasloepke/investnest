@@ -19,8 +19,8 @@ InvestNest is built for CS1530 during the Spring of 2026.
 | Database | Vladimir Deianov |
 | Authentication | James Heffernan |
 | Stock Market API | Ian O'Leary |
-| Frontend Deployment | Sean Morisoli |
-| Backend Deployment | Update Your Name |
+| Frontend Deployment | Lucas Loepke |
+| Backend Deployment | Sean Morisoli |
 | Uptime Monitoring | Sean Morisoli |
 
 ---
