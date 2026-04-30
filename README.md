@@ -1,3 +1,6 @@
+<img width="1536" height="1024" alt="investnest-logo" src="https://github.com/user-attachments/assets/adf1613f-62fd-4727-874b-770ef1700b80" />
+
+
 # InvestNest for CS 1530
 > Track · Budget · Grow
 
