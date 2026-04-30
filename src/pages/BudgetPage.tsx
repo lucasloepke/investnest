@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   getBudgets, createBudget, deleteBudget,
   getCategories, createCategory,
   getExpenses, createExpense, deleteExpense
 } from '@/lib/api'
+import { ROUTES } from '@/lib/routes'
 import type { Budget, Category, Expense } from '@/lib/api'
 
 export function BudgetPage() {
@@ -187,9 +189,14 @@ export function BudgetPage() {
           <div className="page">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h2 style={{ margin: 0, fontSize: '1.1rem' }}>Expenses</h2>
-              <button className="btn btn--primary" style={{ width: 'auto' }} onClick={() => setShowExpenseForm(v => !v)}>
-                + Log Expense
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <Link to={ROUTES.expenses} className="btn btn--secondary" style={{ fontSize: '0.875rem', padding: '0.4rem 0.75rem' }}>
+                  View Full Tracker
+                </Link>
+                <button className="btn btn--primary" style={{ width: 'auto', fontSize: '0.875rem', padding: '0.4rem 0.75rem' }} onClick={() => setShowExpenseForm(v => !v)}>
+                  + Log Expense
+                </button>
+              </div>
             </div>
 
             {showExpenseForm && (
