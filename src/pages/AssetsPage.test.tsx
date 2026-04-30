@@ -3,8 +3,8 @@
  *
  * Verifies that:
  *  - Assets load and display correctly on mount
- *  - Ticker symbol field only appears for Investment type assets
- *  - Adding an Investment asset sends ticker_symbol to the API
+ *  - Ticker symbol field only appears for Stock type assets
+ *  - Adding a Stock asset sends ticker_symbol to the API
  *  - Refresh Live Prices button only appears when ticker assets exist
  *  - Live price and day change are shown after a successful quote refresh
  *  - API errors from quote refresh are surfaced to the user
@@ -30,19 +30,19 @@ const CASH_ASSET: api.Asset = {
   ticker_symbol: null,
 }
 
-const INVESTMENT_ASSET: api.Asset = {
+const STOCK_ASSET: api.Asset = {
   asset_id: 2,
   asset_name: 'Apple shares',
-  asset_type: 'Investment',
-  value: 2000,
+  asset_type: 'Stock',
+  value: 10,
   ticker_symbol: 'AAPL',
 }
 
-const INVESTMENT_ASSET_NO_TICKER: api.Asset = {
+const STOCK_ASSET_NO_TICKER: api.Asset = {
   asset_id: 3,
   asset_name: 'Index Fund',
-  asset_type: 'Investment',
-  value: 1500,
+  asset_type: 'Stock',
+  value: 5,
   ticker_symbol: null,
 }
 
@@ -101,7 +101,7 @@ describe('AssetsPage – initial render', () => {
   })
 
   it('renders asset list when assets exist', async () => {
-    vi.mocked(api.getAssets).mockResolvedValue([CASH_ASSET, INVESTMENT_ASSET])
+    vi.mocked(api.getAssets).mockResolvedValue([CASH_ASSET, STOCK_ASSET])
     await renderAndWait()
     await waitFor(() => {
       expect(screen.getByText('Savings Account')).toBeInTheDocument()
@@ -110,16 +110,16 @@ describe('AssetsPage – initial render', () => {
   })
 
   it('shows total asset value summed correctly', async () => {
-    vi.mocked(api.getAssets).mockResolvedValue([CASH_ASSET, INVESTMENT_ASSET])
+    vi.mocked(api.getAssets).mockResolvedValue([CASH_ASSET, STOCK_ASSET])
     await renderAndWait()
-    // $5,000 + $2,000 = $7,000
+    // Only non-stock assets are included before live prices are fetched.
     await waitFor(() => {
-      expect(screen.getByText('$7,000.00')).toBeInTheDocument()
+      expect(screen.getAllByText('$5,000.00').length).toBeGreaterThan(0)
     })
   })
 
-  it('shows ticker badge for investment assets with a ticker', async () => {
-    vi.mocked(api.getAssets).mockResolvedValue([INVESTMENT_ASSET])
+  it('shows ticker badge for stock assets with a ticker', async () => {
+    vi.mocked(api.getAssets).mockResolvedValue([STOCK_ASSET])
     await renderAndWait()
     await waitFor(() => {
       expect(screen.getByText('AAPL')).toBeInTheDocument()
@@ -143,7 +143,7 @@ describe('AssetsPage – Refresh Live Prices button', () => {
   })
 
   it('does NOT show Refresh button when no assets have a ticker', async () => {
-    vi.mocked(api.getAssets).mockResolvedValue([CASH_ASSET, INVESTMENT_ASSET_NO_TICKER])
+    vi.mocked(api.getAssets).mockResolvedValue([CASH_ASSET, STOCK_ASSET_NO_TICKER])
     await renderAndWait()
     await waitFor(() => {
       expect(screen.queryByRole('button', { name: /refresh live prices/i })).not.toBeInTheDocument()
@@ -151,7 +151,7 @@ describe('AssetsPage – Refresh Live Prices button', () => {
   })
 
   it('shows Refresh button when at least one asset has a ticker', async () => {
-    vi.mocked(api.getAssets).mockResolvedValue([INVESTMENT_ASSET])
+    vi.mocked(api.getAssets).mockResolvedValue([STOCK_ASSET])
     await renderAndWait()
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /refresh live prices/i })).toBeInTheDocument()
@@ -160,7 +160,7 @@ describe('AssetsPage – Refresh Live Prices button', () => {
 
   it('calls getAssetQuotes when Refresh button is clicked', async () => {
     const user = userEvent.setup()
-    vi.mocked(api.getAssets).mockResolvedValue([INVESTMENT_ASSET])
+    vi.mocked(api.getAssets).mockResolvedValue([STOCK_ASSET])
     vi.mocked(api.getAssetQuotes).mockResolvedValue([MOCK_QUOTE])
     await renderAndWait()
 
@@ -174,7 +174,7 @@ describe('AssetsPage – Refresh Live Prices button', () => {
 
   it('displays live price after a successful quote refresh', async () => {
     const user = userEvent.setup()
-    vi.mocked(api.getAssets).mockResolvedValue([INVESTMENT_ASSET])
+    vi.mocked(api.getAssets).mockResolvedValue([STOCK_ASSET])
     vi.mocked(api.getAssetQuotes).mockResolvedValue([MOCK_QUOTE])
     await renderAndWait()
 
@@ -186,9 +186,24 @@ describe('AssetsPage – Refresh Live Prices button', () => {
     })
   })
 
+  it('displays value estimate using live price and shares', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.getAssets).mockResolvedValue([STOCK_ASSET])
+    vi.mocked(api.getAssetQuotes).mockResolvedValue([MOCK_QUOTE])
+    await renderAndWait()
+
+    await waitFor(() => screen.getByRole('button', { name: /refresh live prices/i }))
+    await user.click(screen.getByRole('button', { name: /refresh live prices/i }))
+
+    await waitFor(() => {
+      // 10 shares * $210.50
+      expect(screen.getAllByText('$2,105.00').length).toBeGreaterThan(0)
+    })
+  })
+
   it('shows green day change for a positive quote', async () => {
     const user = userEvent.setup()
-    vi.mocked(api.getAssets).mockResolvedValue([INVESTMENT_ASSET])
+    vi.mocked(api.getAssets).mockResolvedValue([STOCK_ASSET])
     vi.mocked(api.getAssetQuotes).mockResolvedValue([MOCK_QUOTE])
     await renderAndWait()
 
@@ -203,7 +218,7 @@ describe('AssetsPage – Refresh Live Prices button', () => {
 
   it('shows negative day change for a down quote', async () => {
     const user = userEvent.setup()
-    vi.mocked(api.getAssets).mockResolvedValue([INVESTMENT_ASSET])
+    vi.mocked(api.getAssets).mockResolvedValue([STOCK_ASSET])
     vi.mocked(api.getAssetQuotes).mockResolvedValue([MOCK_QUOTE_DOWN])
     await renderAndWait()
 
@@ -217,7 +232,7 @@ describe('AssetsPage – Refresh Live Prices button', () => {
 
   it('shows error message when getAssetQuotes fails', async () => {
     const user = userEvent.setup()
-    vi.mocked(api.getAssets).mockResolvedValue([INVESTMENT_ASSET])
+    vi.mocked(api.getAssets).mockResolvedValue([STOCK_ASSET])
     vi.mocked(api.getAssetQuotes).mockRejectedValue(new Error('hit alpha vantage rate limit (25 requests/day on free tier)'))
     await renderAndWait()
 
@@ -253,45 +268,45 @@ describe('AssetsPage – Add Asset form', () => {
     expect(screen.queryByPlaceholderText(/e\.g\. AAPL/i)).not.toBeInTheDocument()
   })
 
-  it('shows ticker field when asset type is switched to Investment', async () => {
+  it('shows ticker field when asset type is switched to Stock', async () => {
     const user = userEvent.setup()
     await renderAndWait()
 
     await user.click(screen.getByRole('button', { name: /add asset/i }))
-    await user.selectOptions(screen.getByRole('combobox'), 'Investment')
+    await user.selectOptions(screen.getByRole('combobox'), 'Stock')
 
     expect(screen.getByPlaceholderText(/e\.g\. AAPL/i)).toBeInTheDocument()
   })
 
-  it('hides ticker field again when type is changed away from Investment', async () => {
+  it('hides ticker field again when type is changed away from Stock', async () => {
     const user = userEvent.setup()
     await renderAndWait()
 
     await user.click(screen.getByRole('button', { name: /add asset/i }))
-    await user.selectOptions(screen.getByRole('combobox'), 'Investment')
+    await user.selectOptions(screen.getByRole('combobox'), 'Stock')
     expect(screen.getByPlaceholderText(/e\.g\. AAPL/i)).toBeInTheDocument()
 
     await user.selectOptions(screen.getByRole('combobox'), 'Cash')
     expect(screen.queryByPlaceholderText(/e\.g\. AAPL/i)).not.toBeInTheDocument()
   })
 
-  it('calls addAsset with ticker_symbol when submitting an Investment asset', async () => {
+  it('calls addAsset with ticker_symbol when submitting a Stock asset', async () => {
     const user = userEvent.setup()
-    const newAsset: api.Asset = { ...INVESTMENT_ASSET, asset_id: 99 }
+    const newAsset: api.Asset = { ...STOCK_ASSET, asset_id: 99 }
     vi.mocked(api.addAsset).mockResolvedValue(newAsset)
     await renderAndWait()
 
     await user.click(screen.getByRole('button', { name: /add asset/i }))
     await user.type(screen.getByPlaceholderText(/e\.g\. apple shares/i), 'Apple shares')
-    await user.selectOptions(screen.getByRole('combobox'), 'Investment')
-    await user.type(screen.getByPlaceholderText(/0\.00/i), '2000')
+    await user.selectOptions(screen.getByRole('combobox'), 'Stock')
+    await user.type(screen.getByPlaceholderText(/0\.0000/i), '10')
     await user.type(screen.getByPlaceholderText(/e\.g\. AAPL/i), 'AAPL')
 
     await user.click(screen.getByRole('button', { name: /^add asset$/i }))
 
     await waitFor(() => {
       expect(vi.mocked(api.addAsset)).toHaveBeenCalledWith(
-        expect.objectContaining({ ticker_symbol: 'AAPL', asset_type: 'Investment' })
+        expect.objectContaining({ ticker_symbol: 'AAPL', asset_type: 'Stock' })
       )
     })
   })
@@ -316,13 +331,13 @@ describe('AssetsPage – Add Asset form', () => {
 
   it('shows new asset in the list after adding', async () => {
     const user = userEvent.setup()
-    vi.mocked(api.addAsset).mockResolvedValue(INVESTMENT_ASSET)
+    vi.mocked(api.addAsset).mockResolvedValue(STOCK_ASSET)
     await renderAndWait()
 
     await user.click(screen.getByRole('button', { name: /add asset/i }))
     await user.type(screen.getByPlaceholderText(/e\.g\. apple shares/i), 'Apple shares')
-    await user.selectOptions(screen.getByRole('combobox'), 'Investment')
-    await user.type(screen.getByPlaceholderText(/0\.00/i), '2000')
+    await user.selectOptions(screen.getByRole('combobox'), 'Stock')
+    await user.type(screen.getByPlaceholderText(/0\.0000/i), '10')
 
     await user.click(screen.getByRole('button', { name: /^add asset$/i }))
 
