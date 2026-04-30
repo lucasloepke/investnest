@@ -10,7 +10,7 @@ import {
   type TickerSearchResult,
 } from '@/lib/api'
 
-const assetTypes = ['Cash', 'Investment', 'Real Estate', 'Other'] as const
+const assetTypes = ['Cash', 'Stock', 'Real Estate', 'Other'] as const
 type AssetType = (typeof assetTypes)[number]
 
 function fmt(n: number) {
@@ -96,7 +96,16 @@ export function AssetsPage() {
     return () => { mounted = false }
   }, [])
 
-  const totalValue = useMemo(() => assets.reduce((sum, a) => sum + Number(a.value), 0), [assets])
+  const totalValue = useMemo(
+    () =>
+      assets.reduce((sum, asset) => {
+        if (asset.asset_type !== 'Stock') return sum + Number(asset.value)
+        const quote = quotes[asset.asset_id]
+        if (quote && !quote.error) return sum + quote.price * Number(asset.value)
+        return sum
+      }, 0),
+    [assets, quotes],
+  )
   const hasTickerAssets = assets.some(a => a.ticker_symbol)
 
   async function handleRefreshQuotes() {
@@ -127,7 +136,7 @@ export function AssetsPage() {
         asset_name: assetName.trim(),
         asset_type: assetType,
         value: parsedValue,
-        ticker_symbol: assetType === 'Investment' && tickerSymbol.trim() ? tickerSymbol.trim() : null,
+        ticker_symbol: assetType === 'Stock' && tickerSymbol.trim() ? tickerSymbol.trim() : null,
       })
       setAssets(current => [created, ...current])
       setAssetName(''); setValue(''); setAssetType('Cash'); setTickerSymbol(''); setShowForm(false)
@@ -181,17 +190,17 @@ export function AssetsPage() {
               </div>
               <div className="form-field">
                 <label className="form-label">Asset Type</label>
-                <select className="form-input" value={assetType} onChange={e => { setAssetType(e.target.value as AssetType); if (e.target.value !== 'Investment') setTickerSymbol('') }}>
+                <select className="form-input" value={assetType} onChange={e => { setAssetType(e.target.value as AssetType); if (e.target.value !== 'Stock') setTickerSymbol('') }}>
                   {assetTypes.map(type => <option key={type} value={type}>{type}</option>)}
                 </select>
               </div>
               <div className="form-field">
-                <label className="form-label">Value ($)</label>
-                <input className="form-input" type="number" min="0" step="0.01" value={value} onChange={e => setValue(e.target.value)} placeholder="0.00" required />
+                <label className="form-label">{assetType === 'Stock' ? 'Amount of Shares' : 'Value ($)'}</label>
+                <input className="form-input" type="number" min="0" step={assetType === 'Stock' ? '0.0001' : '0.01'} value={value} onChange={e => setValue(e.target.value)} placeholder={assetType === 'Stock' ? '0.0000' : '0.00'} required />
               </div>
             </div>
 
-            {assetType === 'Investment' && (
+            {assetType === 'Stock' && (
               <div style={{ marginBottom: '0.75rem', maxWidth: '240px' }}>
                 <div className="form-field">
                   <label className="form-label">
@@ -200,7 +209,7 @@ export function AssetsPage() {
                   </label>
                   <TickerSearch value={tickerSymbol} onChange={setTickerSymbol} />
                   <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--color-muted)' }}>
-                    Link to a stock or ETF to see live prices.
+                    Link this stock or ETF to see live prices and estimated value.
                   </p>
                 </div>
               </div>
@@ -245,8 +254,9 @@ export function AssetsPage() {
                 <th style={{ padding: '0.4rem 0.5rem' }}>Name</th>
                 <th style={{ padding: '0.4rem 0.5rem' }}>Type</th>
                 <th style={{ padding: '0.4rem 0.5rem' }}>Ticker</th>
-                <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>Book Value</th>
+                <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>Shares</th>
                 <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>Live Price</th>
+                <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>Value Estimate</th>
                 <th style={{ padding: '0.4rem 0.5rem', textAlign: 'right' }}>Day Change</th>
                 <th style={{ padding: '0.4rem 0.5rem' }} />
               </tr>
@@ -266,12 +276,21 @@ export function AssetsPage() {
                         </span>
                       ) : <span style={{ color: 'var(--color-muted)', fontSize: '0.8rem' }}>—</span>}
                     </td>
-                    <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 500 }}>{fmt(asset.value)}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 500 }}>
+                      {asset.asset_type === 'Stock' ? Number(asset.value).toLocaleString('en-US', { maximumFractionDigits: 4 }) : fmt(asset.value)}
+                    </td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>
                       {quote && !quote.error ? <span style={{ fontWeight: 500 }}>{fmt(quote.price)}</span>
                         : quote?.error ? <span style={{ color: 'var(--color-error)', fontSize: '0.78rem' }} title={quote.error}>Error</span>
                         : asset.ticker_symbol ? <span style={{ color: 'var(--color-muted)', fontSize: '0.8rem' }}>—</span>
                         : null}
+                    </td>
+                    <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 500 }}>
+                      {asset.asset_type === 'Stock' ? (
+                        quote && !quote.error ? fmt(quote.price * Number(asset.value)) : <span style={{ color: 'var(--color-muted)', fontSize: '0.8rem' }}>—</span>
+                      ) : (
+                        fmt(asset.value)
+                      )}
                     </td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>
                       {quote && !quote.error && (
@@ -292,7 +311,7 @@ export function AssetsPage() {
 
         {hasTickerAssets && Object.keys(quotes).length === 0 && !quotesLoading && (
           <p style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--color-muted)' }}>
-            Click <strong>Refresh Live Prices</strong> to fetch current market data for your investment assets.
+            Click <strong>Refresh Live Prices</strong> to fetch current market data for your stock assets.
           </p>
         )}
       </div>

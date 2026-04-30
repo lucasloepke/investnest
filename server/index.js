@@ -352,7 +352,7 @@ app.get('/api/assets', auth, async (req, res) => {
   }
 })
 
-// Feature #13: live stock quotes for investment assets that have a ticker_symbol
+// Feature #13: live stock quotes for stock assets that have a ticker_symbol
 app.get('/api/assets/quotes', auth, async (req, res) => {
   try {
     const result = await db.query(
@@ -400,8 +400,8 @@ app.post('/api/assets', auth, async (req, res) => {
   if (!asset_name || !asset_type || value == null)
     return res.status(400).json({ error: 'missing required fields' })
 
-  // Only Investment assets can have a ticker symbol
-  const ticker = asset_type === 'Investment' && ticker_symbol
+  // Only Stock assets can have a ticker symbol
+  const ticker = asset_type === 'Stock' && ticker_symbol
     ? ticker_symbol.toUpperCase().trim()
     : null
 

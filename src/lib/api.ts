@@ -256,7 +256,7 @@ export function deleteAsset(assetId: number): Promise<void> {
   return request<void>(`/api/assets/${assetId}`, { method: 'DELETE' })
 }
 
-// Feature #13: fetch live stock prices for all investment assets with a ticker_symbol
+// Feature #13: fetch live stock prices for all stock assets with a ticker_symbol
 export function getAssetQuotes(): Promise<AssetQuote[]> {
   return request<AssetQuote[]>('/api/assets/quotes')
 }
