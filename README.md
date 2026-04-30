@@ -14,7 +14,7 @@ InvestNest is built for CS1530 during the Spring of 2026.
 
 | Layer | Team Member |
 |---|---|
-| Frontend | Lucas Loepke |
+| Frontend | Lucas Loepke + David Lindsey |
 | Backend | James Heffernan + Ian O'Leary |
 | Database | Vladimir Deianov |
 | Authentication | James Heffernan |
