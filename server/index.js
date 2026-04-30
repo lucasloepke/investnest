@@ -526,9 +526,9 @@ app.delete('/api/watchlist/:symbol', auth, async (req, res) => {
 app.get('/api/networth', auth, async (req, res) => {
   const uid = req.user.user_id
   try {
-    const [assets, budgets, thisMonth, thisYear] = await Promise.all([
+    const [assetRows, budgets, thisMonth, thisYear] = await Promise.all([
       db.query(
-        'SELECT asset_type, COUNT(*) as count, SUM(value) as total_value FROM assets WHERE user_id = $1 GROUP BY asset_type',
+        'SELECT asset_id, asset_type, value, ticker_symbol FROM assets WHERE user_id = $1',
         [uid]
       ),
       db.query(
@@ -553,11 +553,52 @@ app.get('/api/networth', auth, async (req, res) => {
       )
     ])
 
-    const netWorth = assets.rows.reduce((sum, r) => sum + parseFloat(r.total_value || 0), 0)
+    const symbolSet = new Set()
+    for (const asset of assetRows.rows) {
+      if (asset.asset_type === 'Stock' && asset.ticker_symbol) {
+        symbolSet.add(asset.ticker_symbol.toUpperCase())
+      }
+    }
+
+    let quotesBySymbol = {}
+    if (symbolSet.size > 0) {
+      try {
+        quotesBySymbol = await av.getBatchQuotes(Array.from(symbolSet))
+      } catch {
+        quotesBySymbol = {}
+      }
+    }
+
+    const assetsByTypeMap = {}
+    let netWorth = 0
+
+    for (const asset of assetRows.rows) {
+      let computedValue = 0
+
+      if (asset.asset_type === 'Stock') {
+        const symbol = asset.ticker_symbol?.toUpperCase()
+        const quote = symbol ? quotesBySymbol[symbol] : null
+        const livePrice = quote && !quote.error ? Number(quote.price) : NaN
+
+        // If we have no live value estimate for a stock, do not count it.
+        if (!Number.isFinite(livePrice)) continue
+        computedValue = livePrice * Number(asset.value || 0)
+      } else {
+        computedValue = Number(asset.value || 0)
+      }
+
+      if (!assetsByTypeMap[asset.asset_type]) {
+        assetsByTypeMap[asset.asset_type] = { asset_type: asset.asset_type, count: 0, total_value: 0 }
+      }
+
+      assetsByTypeMap[asset.asset_type].count += 1
+      assetsByTypeMap[asset.asset_type].total_value += computedValue
+      netWorth += computedValue
+    }
 
     res.json({
       net_worth: netWorth,
-      assets_by_type: assets.rows,
+      assets_by_type: Object.values(assetsByTypeMap),
       budgets: budgets.rows,
       expenses: {
         this_month: parseFloat(thisMonth.rows[0].total),
