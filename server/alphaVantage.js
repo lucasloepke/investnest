@@ -1,7 +1,6 @@
 const https = require('https')
 require('dotenv').config()
 
-//alpha vantage api gives json
 function avGet(params) {
   return new Promise((resolve, reject) => {
     const qs = new URLSearchParams({ ...params, apikey: process.env.ALPHA_VANTAGE_API_KEY }).toString()
@@ -11,7 +10,6 @@ function avGet(params) {
       res.on('data', chunk => raw += chunk)
       res.on('end', () => {
         const json = JSON.parse(raw)
-        //free tier of alpha vantage is limited
         if (json['Note'] || json['Information']) {
           reject(new Error('hit alpha vantage rate limit (25 requests/day on free tier)'))
         } else {
@@ -37,7 +35,6 @@ async function getQuote(symbol) {
   }
 }
 
-//delay makes sure we dont hit limit for alpha vantage
 async function getBatchQuotes(symbols) {
   const results = {}
   for (const sym of symbols) {
