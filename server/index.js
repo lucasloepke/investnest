@@ -26,10 +26,6 @@ function auth(req, res, next) {
 
 app.get('/ping', (_req, res) => res.json({ ok: true }))
 
-
-//TODO james: add register/login stuff here
-//jwt payload needs to have user_id in it or nothing below works
-
 // register
 app.post('/api/register', async (req, res) => {
   const { email, password, name } = req.body
